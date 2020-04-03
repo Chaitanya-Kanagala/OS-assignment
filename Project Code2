@@ -1,0 +1,38 @@
+#include <stdio.h>
+	#include <stdlib.h>
+	#include <signal.h>
+	#include <time.h>
+	#include <unistd.h>
+	#include <pthread.h>
+	
+	#include "caltrain.h"
+	
+	volatile int threads_completed = 0;
+	
+	void*
+	passenger_thread(void *arg)
+	{
+		struct station *station = (struct station*)arg;
+		station_wait_for_train(station);
+		__sync_add_and_fetch(&threads_completed, 1);
+		return NULL;
+	}
+	
+	struct load_train_args {
+		struct station *station;
+		int free_seats;
+	};
+	
+	volatile int load_train_returned = 0;
+	
+	void*
+	load_train_thread(void *args)
+	{
+		struct load_train_args *ltargs = (struct load_train_args*)args;
+		station_load_train(ltargs->station, ltargs->free_seats);
+		load_train_returned = 1;
+		return NULL;
+	}
+	
+	const char* alarm_error_str;
+	int alarm_timeout;
